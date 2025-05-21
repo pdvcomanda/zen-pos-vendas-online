@@ -9,7 +9,138 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      addons: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          id: string
+          name: string
+          price: number
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name: string
+          price: number
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          id?: string
+          name?: string
+          price?: number
+        }
+        Relationships: []
+      }
+      categories: {
+        Row: {
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: []
+      }
+      employees: {
+        Row: {
+          created_at: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+        }
+        Insert: {
+          created_at?: string | null
+          email: string
+          id: string
+          name: string
+          role: string
+        }
+        Update: {
+          created_at?: string | null
+          email?: string
+          id?: string
+          name?: string
+          role?: string
+        }
+        Relationships: []
+      }
+      products: {
+        Row: {
+          category: string | null
+          created_at: string | null
+          description: string | null
+          id: string
+          image: string | null
+          name: string
+          price: number
+          stock: number | null
+          updated_at: string | null
+        }
+        Insert: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image?: string | null
+          name: string
+          price: number
+          stock?: number | null
+          updated_at?: string | null
+        }
+        Update: {
+          category?: string | null
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          image?: string | null
+          name?: string
+          price?: number
+          stock?: number | null
+          updated_at?: string | null
+        }
+        Relationships: []
+      }
+      sales: {
+        Row: {
+          created_at: string | null
+          created_by: string | null
+          customername: string | null
+          id: string
+          items: Json
+          payment: Json
+          total: number
+        }
+        Insert: {
+          created_at?: string | null
+          created_by?: string | null
+          customername?: string | null
+          id?: string
+          items: Json
+          payment: Json
+          total: number
+        }
+        Update: {
+          created_at?: string | null
+          created_by?: string | null
+          customername?: string | null
+          id?: string
+          items?: Json
+          payment?: Json
+          total?: number
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
