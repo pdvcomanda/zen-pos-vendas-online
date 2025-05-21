@@ -1,4 +1,3 @@
-
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { supabase } from "@/integrations/supabase/client";
@@ -11,6 +10,7 @@ import {
   PaymentDetails,
   Sale 
 } from "@/types/app";
+import { Json } from '@/integrations/supabase/types';
 
 interface DataState {
   // Using the types from our app.ts
@@ -396,11 +396,11 @@ export const useDataStore = create<DataState>()(
             change
           };
           
-          // Create sale object for Supabase
+          // Create sale object for Supabase - convert to Json types to match database schema
           const saleData = {
-            items: cart,
+            items: cart as unknown as Json,
             total,
-            payment: finalPayment,
+            payment: finalPayment as unknown as Json,
             customerName
           };
           
