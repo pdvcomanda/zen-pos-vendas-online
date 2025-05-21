@@ -1,6 +1,7 @@
 
 // App-specific types that extend or use Supabase types
 import type { Database } from '../integrations/supabase/types';
+import type { Json } from '../integrations/supabase/types';
 
 // Define types for our application using the Supabase database types
 export type ProductType = Database['public']['Tables']['products']['Row'];
@@ -37,4 +38,13 @@ export interface PaymentDetails {
   method: PaymentMethod;
   amount: number;
   change?: number;
+}
+
+export interface Sale {
+  id: string;
+  items: CartItem[];
+  total: number;
+  payment: PaymentDetails;
+  createdAt: string;
+  customerName?: string;
 }

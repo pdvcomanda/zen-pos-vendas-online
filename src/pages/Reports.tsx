@@ -1,6 +1,6 @@
-
-import React, { useState } from 'react';
-import { useDataStore, type Sale, type Product } from '@/stores/dataStore';
+import React from 'react';
+import { useDataStore } from '@/stores/dataStore';
+import { ProductType } from '@/types/app';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { 

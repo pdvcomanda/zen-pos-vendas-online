@@ -2,6 +2,7 @@
 import React, { useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDataStore } from '@/stores/dataStore';
+import { Sale } from '@/types/app';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Printer, Download, Share } from 'lucide-react';

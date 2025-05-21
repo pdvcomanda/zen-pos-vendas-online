@@ -8,18 +8,9 @@ import {
   AddonType,
   CartItem, 
   PaymentMethod, 
-  PaymentDetails 
+  PaymentDetails,
+  Sale 
 } from "@/types/app";
-
-// Ensure we're using the types from our app.ts instead of redefining them
-export interface Sale {
-  id: string;
-  items: CartItem[];
-  total: number;
-  payment: PaymentDetails;
-  createdAt: string;
-  customerName?: string;
-}
 
 interface DataState {
   // Using the types from our app.ts

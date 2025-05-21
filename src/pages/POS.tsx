@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
-import { useDataStore, type CartItem, type Product, type Category, type PaymentMethod } from '@/stores/dataStore';
+import { useDataStore } from '@/stores/dataStore';
+import { ProductType, CategoryType, CartItem, PaymentMethod } from '@/types/app';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent } from '@/components/ui/card';
@@ -48,7 +48,7 @@ const POS: React.FC = () => {
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>('cash');
   const [amountPaid, setAmountPaid] = useState<number>(0);
   const [customerName, setCustomerName] = useState('');
-  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
   const [selectedProductNotes, setSelectedProductNotes] = useState('');
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
   
@@ -60,7 +60,7 @@ const POS: React.FC = () => {
     const matchesSearch = 
       searchTerm === '' || 
       product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      product.description.toLowerCase().includes(searchTerm.toLowerCase());
+      (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()));
     
     const matchesCategory = 
       activeCategory === null || 
@@ -70,7 +70,7 @@ const POS: React.FC = () => {
   });
   
   // Add product to cart (opens dialog for quantity/notes)
-  const handleProductSelect = (product: Product) => {
+  const handleProductSelect = (product: ProductType) => {
     setSelectedProduct(product);
     setSelectedProductNotes('');
     setIsProductDialogOpen(true);
@@ -79,7 +79,7 @@ const POS: React.FC = () => {
   // Add product to cart with quantity and notes
   const handleAddToCart = () => {
     if (selectedProduct) {
-      addToCart(selectedProduct, 1, selectedProductNotes || undefined);
+      addToCart(selectedProduct, 1, [], selectedProductNotes || undefined);
       setIsProductDialogOpen(false);
       toast.success(`${selectedProduct.name} adicionado ao carrinho`);
     }
@@ -98,14 +98,14 @@ const POS: React.FC = () => {
     setIsCheckoutOpen(true);
   };
   
-  const handleCompleteSale = () => {
+  const handleCompleteSale = async () => {
     if (amountPaid < cartTotal) {
       toast.error('O valor pago deve ser maior ou igual ao total da compra');
       return;
     }
     
     try {
-      const sale = completeSale(
+      const sale = await completeSale(
         { method: paymentMethod, amount: amountPaid }, 
         customerName || undefined
       );
@@ -119,7 +119,9 @@ const POS: React.FC = () => {
       });
       
       // Navigate to receipt view
-      navigate(`/receipt/${sale.id}`);
+      if (sale) {
+        navigate(`/receipt/${sale.id}`);
+      }
       
     } catch (error) {
       toast.error('Erro ao finalizar venda');

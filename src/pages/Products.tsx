@@ -1,6 +1,6 @@
-
 import React, { useState } from 'react';
-import { useDataStore, type Product, type Category } from '@/stores/dataStore';
+import { useDataStore } from '@/stores/dataStore';
+import { ProductType, CategoryType } from '@/types/app';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -55,12 +55,13 @@ const Products: React.FC = () => {
   // Product state
   const [productDialogOpen, setProductDialogOpen] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [newProduct, setNewProduct] = useState<Omit<Product, 'id'>>({
+  const [newProduct, setNewProduct] = useState<Omit<ProductType, 'id' | 'created_at' | 'updated_at'>>({
     name: '',
     price: 0,
     description: '',
     category: '',
-    stock: 0
+    stock: 0,
+    image: ''
   });
   const [editingProductId, setEditingProductId] = useState<string | null>(null);
   
@@ -72,19 +73,19 @@ const Products: React.FC = () => {
   // Filter products based on search
   const filteredProducts = products.filter(product => 
     product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    product.description.toLowerCase().includes(searchTerm.toLowerCase())
+    (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()))
   );
   
   // Product dialog handling
-  const openProductDialog = (product?: Product) => {
+  const openProductDialog = (product?: ProductType) => {
     if (product) {
       setNewProduct({
         name: product.name,
         price: product.price,
         description: product.description,
-        category: product.category,
-        stock: product.stock,
-        image: product.image
+        category: product.category || '',
+        stock: product.stock || 0,
+        image: product.image || ''
       });
       setEditingProductId(product.id);
     } else {
@@ -93,7 +94,8 @@ const Products: React.FC = () => {
         price: 0,
         description: '',
         category: categories.length > 0 ? categories[0].id : '',
-        stock: 0
+        stock: 0,
+        image: ''
       });
       setEditingProductId(null);
     }
@@ -134,7 +136,7 @@ const Products: React.FC = () => {
   };
   
   // Category dialog handling
-  const openCategoryDialog = (category?: Category) => {
+  const openCategoryDialog = (category?: CategoryType) => {
     if (category) {
       setNewCategory(category.name);
       setEditingCategoryId(category.id);
@@ -190,7 +192,7 @@ const Products: React.FC = () => {
         return [
           `"${p.name.replace(/"/g, '""')}"`,
           p.price,
-          `"${p.description.replace(/"/g, '""')}"`,
+          `"${(p.description || '').replace(/"/g, '""')}"`,
           `"${category.replace(/"/g, '""')}"`,
           p.stock
         ].join(',');
@@ -447,7 +449,7 @@ const Products: React.FC = () => {
               <label className="text-sm font-medium">Descrição</label>
               <Textarea
                 placeholder="Descrição do produto"
-                value={newProduct.description}
+                value={newProduct.description || ''}
                 onChange={(e) => setNewProduct({...newProduct, description: e.target.value})}
               />
             </div>
