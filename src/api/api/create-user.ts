@@ -11,15 +11,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     return res.status(405).json({ error: 'Método não permitido' });
   }
 
+  let body: any = req.body;
+
+  // fallback para req.body vazio
+  if (!body || Object.keys(body).length === 0) {
+    try {
+      const raw = await new Promise<string>((resolve, reject) => {
+        let data = '';
+        req.on('data', chunk => data += chunk);
+        req.on('end', () => resolve(data));
+        req.on('error', reject);
+      });
+      body = JSON.parse(raw);
+    } catch (err) {
+      return res.status(400).json({ error: 'Body inválido' });
+    }
+  }
+
+  const { name, email, password, role } = body;
+
   try {
-    const body = req.body || (await new Promise((resolve) => {
-      let raw = '';
-      req.on('data', chunk => raw += chunk);
-      req.on('end', () => resolve(JSON.parse(raw)));
-    }));
-
-    const { name, email, password, role } = body;
-
     const { data, error } = await supabase.auth.admin.createUser({
       email,
       password,
