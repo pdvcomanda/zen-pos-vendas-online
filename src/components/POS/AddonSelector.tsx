@@ -32,7 +32,8 @@ export const AddonSelector: React.FC<AddonSelectorProps> = ({
         {addons.map((addon) => {
           const isChecked = selectedAddons.some(a => a.id === addon.id);
           const selectedAddon = selectedAddons.find(a => a.id === addon.id);
-          const quantity = selectedAddon?.quantity || 1;
+          // Fix: Use optional chaining and provide a default value for quantity
+          const addonQuantity = (selectedAddon as any)?.quantity || 1;
           
           return (
             <div key={addon.id} className="flex items-center space-x-2 bg-gray-50 p-2 rounded-md">
@@ -59,18 +60,18 @@ export const AddonSelector: React.FC<AddonSelectorProps> = ({
                     variant="outline" 
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => onChangeQuantity(addon, Math.max(1, quantity - 1))}
+                    onClick={() => onChangeQuantity(addon, Math.max(1, addonQuantity - 1))}
                   >
                     <Minus size={14} />
                   </Button>
                   
-                  <span className="w-6 text-center text-sm">{quantity}</span>
+                  <span className="w-6 text-center text-sm">{addonQuantity}</span>
                   
                   <Button 
                     variant="outline" 
                     size="icon"
                     className="h-6 w-6"
-                    onClick={() => onChangeQuantity(addon, quantity + 1)}
+                    onClick={() => onChangeQuantity(addon, addonQuantity + 1)}
                   >
                     <Plus size={14} />
                   </Button>

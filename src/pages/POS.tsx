@@ -1,11 +1,12 @@
 
 import React, { useState, useEffect } from 'react';
 import { useDataStore } from '@/stores/dataStore';
-import { ProductType, CartItem, PaymentMethod, AddonType } from '@/types/app';
+import { ProductType, CartItem, PaymentMethod, AddonType, CartAddon } from '@/types/app';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
 import { PrinterIcon } from 'lucide-react';
+import { useAddons } from '@/hooks/useAddons';
 
 // Import our components
 import { SearchBar } from '@/components/POS/SearchBar';
@@ -16,15 +17,11 @@ import { ProductDialog } from '@/components/POS/ProductDialog';
 import { CheckoutDialog } from '@/components/POS/CheckoutDialog';
 import { PrinterService } from '@/services/PrinterService';
 
-// Import addon selection component
-import { AddonSelector } from '@/components/POS/AddonSelector';
-
 const POS: React.FC = () => {
   const navigate = useNavigate();
   const { 
     products, 
     categories,
-    addons,
     cart, 
     addToCart, 
     updateCartItem, 
@@ -43,9 +40,11 @@ const POS: React.FC = () => {
   const [selectedProduct, setSelectedProduct] = useState<ProductType | null>(null);
   const [selectedProductNotes, setSelectedProductNotes] = useState('');
   const [isProductDialogOpen, setIsProductDialogOpen] = useState(false);
-  const [selectedAddons, setSelectedAddons] = useState<AddonType[]>([]);
   const [printerStatus, setPrinterStatus] = useState<boolean | null>(null);
   const [quantity, setQuantity] = useState(1);
+  
+  // Get addons for selected product
+  const productAddons = useAddons(selectedProduct?.id || null);
   
   // Calculate cart total
   const cartTotal = cart.reduce((sum, item) => {
@@ -98,13 +97,12 @@ const POS: React.FC = () => {
   const handleProductSelect = (product: ProductType) => {
     setSelectedProduct(product);
     setSelectedProductNotes('');
-    setSelectedAddons([]);
     setQuantity(1);
     setIsProductDialogOpen(true);
   };
   
   // Add product to cart with quantity, notes, and addons
-  const handleAddToCart = () => {
+  const handleAddToCart = (selectedAddons?: CartAddon[]) => {
     if (selectedProduct) {
       addToCart(selectedProduct, quantity, selectedAddons, selectedProductNotes || undefined);
       setIsProductDialogOpen(false);
@@ -161,15 +159,6 @@ const POS: React.FC = () => {
     } catch (error) {
       console.error('Erro ao finalizar venda:', error);
       toast.error('Erro ao finalizar venda');
-    }
-  };
-  
-  // Toggle addon selection
-  const handleToggleAddon = (addon: AddonType) => {
-    if (selectedAddons.some(a => a.id === addon.id)) {
-      setSelectedAddons(selectedAddons.filter(a => a.id !== addon.id));
-    } else {
-      setSelectedAddons([...selectedAddons, addon]);
     }
   };
   
@@ -242,16 +231,8 @@ const POS: React.FC = () => {
         quantity={quantity}
         setQuantity={setQuantity}
         onAddToCart={handleAddToCart}
-      >
-        {/* Add addon selector component */}
-        {selectedProduct && addons.length > 0 && (
-          <AddonSelector 
-            addons={addons}
-            selectedAddons={selectedAddons}
-            onToggleAddon={handleToggleAddon}
-          />
-        )}
-      </ProductDialog>
+        availableAddons={productAddons}
+      />
       
       {/* Checkout dialog */}
       <CheckoutDialog
