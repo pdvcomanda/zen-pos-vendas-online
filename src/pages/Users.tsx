@@ -191,4 +191,3 @@ const Users: React.FC = () => {
 };
 
 export default Users;
-Corrigido Users.tsx - salvar e editar funcionários
