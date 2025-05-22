@@ -1,7 +1,6 @@
-
 import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { 
+import {
   Card,
   CardContent,
   CardHeader,
@@ -26,36 +25,28 @@ const Users: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [userDialogOpen, setUserDialogOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<UserData | null>(null);
-  
-  // Load users from Supabase
+
   useEffect(() => {
     loadUsers();
   }, []);
-  
+
   const loadUsers = async () => {
     try {
       const { data, error } = await supabase
         .from('employees')
-        .select('*')
+        .select('id, name, email, role')
         .order('name');
-      
+
       if (error) throw error;
-      
-      setUsers(data.map(user => ({
-        id: user.id,
-        name: user.name,
-        email: user.email,
-        role: user.role as UserRole
-      })));
+
+      setUsers(data as UserData[]);
     } catch (error) {
-      console.error('Error loading users:', error);
+      console.error('Erro ao carregar usuários:', error);
       toast.error('Erro ao carregar usuários');
     } finally {
       setLoading(false);
     }
   };
-  
-  // Open dialog for adding/editing user
   const openUserDialog = (user?: UserData) => {
     if (user) {
       setEditingUser(user);
@@ -64,8 +55,7 @@ const Users: React.FC = () => {
     }
     setUserDialogOpen(true);
   };
-  
-  // Handle save user
+
   const handleSaveUser = async (userData: {
     name: string;
     email: string;
@@ -74,7 +64,6 @@ const Users: React.FC = () => {
   }) => {
     try {
       if (editingUser) {
-        // Update existing user
         const { error } = await supabase
           .from('employees')
           .update({
@@ -83,31 +72,17 @@ const Users: React.FC = () => {
             role: userData.role
           })
           .eq('id', editingUser.id);
-        
+
         if (error) throw error;
-        
-        // If password provided, update it separately via auth API or function
-        if (userData.password) {
-          // In a real implementation, you would update the password via auth API
-          console.log('Password would be updated separately via auth API');
-        }
-        
-        setUsers(users.map(user => 
+
+        setUsers(users.map(user =>
           user.id === editingUser.id ? { ...user, ...userData } : user
         ));
-        
+
         toast.success('Usuário atualizado com sucesso');
       } else {
-        // For new users, we need to create an ID
         const newId = crypto.randomUUID();
-        
-        // Validate required fields for new user
-        if (!userData.password) {
-          toast.error('Senha é obrigatória para novos usuários');
-          return;
-        }
-        
-        // Add new user
+
         const { error } = await supabase
           .from('employees')
           .insert([{
@@ -116,53 +91,49 @@ const Users: React.FC = () => {
             email: userData.email,
             role: userData.role
           }]);
-        
+
         if (error) throw error;
-        
-        // In a real implementation, you would handle password separately through auth
-        
-        setUsers([...users, { 
+
+        setUsers([...users, {
           id: newId,
           name: userData.name,
           email: userData.email,
           role: userData.role
         }]);
-        
+
         toast.success('Usuário adicionado com sucesso');
       }
+
       setUserDialogOpen(false);
     } catch (error: any) {
-      console.error('Error saving user:', error);
-      toast.error(`Erro ao salvar usuário: ${error?.message || 'Erro desconhecido'}`);
+      console.error('Erro ao salvar usuário:', error);
+      toast.error(`Erro: ${error.message || 'Erro desconhecido'}`);
     }
   };
-  
-  // Handle delete user
   const handleDeleteUser = async (id: string) => {
-    // Don't allow deleting the primary admin
     if (id === '1') {
       toast.error('Não é possível excluir o administrador principal');
       return;
     }
-    
+
     if (confirm('Tem certeza que deseja excluir este usuário?')) {
       try {
         const { error } = await supabase
           .from('employees')
           .delete()
           .eq('id', id);
-        
+
         if (error) throw error;
-        
+
         setUsers(users.filter(user => user.id !== id));
         toast.success('Usuário excluído com sucesso');
       } catch (error) {
-        console.error('Error deleting user:', error);
+        console.error('Erro ao excluir usuário:', error);
         toast.error('Erro ao excluir usuário');
       }
     }
   };
-  
+
   return (
     <div className="p-6">
       <div className="flex justify-between items-center mb-6">
@@ -170,8 +141,8 @@ const Users: React.FC = () => {
           <UsersIcon className="mr-2" />
           Funcionários
         </h1>
-        
-        <Button 
+
+        <Button
           className="bg-acai-purple hover:bg-acai-dark flex items-center"
           onClick={() => openUserDialog()}
         >
@@ -179,22 +150,21 @@ const Users: React.FC = () => {
           Novo Funcionário
         </Button>
       </div>
-      
+
       <Card>
         <CardHeader>
           <CardTitle>Gerenciamento de Usuários</CardTitle>
         </CardHeader>
         <CardContent>
-          <UserTable 
-            users={users} 
-            onEdit={openUserDialog} 
+          <UserTable
+            users={users}
+            onEdit={openUserDialog}
             onDelete={handleDeleteUser}
             isLoading={loading}
           />
         </CardContent>
       </Card>
-      
-      {/* User Dialog */}
+
       <Dialog open={userDialogOpen} onOpenChange={setUserDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -202,14 +172,13 @@ const Users: React.FC = () => {
               {editingUser ? 'Editar Funcionário' : 'Novo Funcionário'}
             </DialogTitle>
             <DialogDescription>
-              {editingUser 
+              {editingUser
                 ? 'Atualize as informações do funcionário'
-                : 'Preencha as informações para adicionar um novo funcionário'
-              }
+                : 'Preencha os dados do novo funcionário'}
             </DialogDescription>
           </DialogHeader>
-          
-          <UserForm 
+
+          <UserForm
             initialData={editingUser || { name: '', email: '', role: 'employee' }}
             onSave={handleSaveUser}
             onCancel={() => setUserDialogOpen(false)}
@@ -222,3 +191,4 @@ const Users: React.FC = () => {
 };
 
 export default Users;
+Corrigido Users.tsx - salvar e editar funcionários
