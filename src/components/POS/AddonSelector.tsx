@@ -3,18 +3,21 @@ import React from 'react';
 import { AddonType } from '@/types/app';
 import { Label } from '@/components/ui/label';
 import { Checkbox } from '@/components/ui/checkbox';
-import { Plus } from 'lucide-react';
+import { Plus, Minus } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 
 interface AddonSelectorProps {
   addons: AddonType[];
   selectedAddons: AddonType[];
   onToggleAddon: (addon: AddonType) => void;
+  onChangeQuantity?: (addon: AddonType, quantity: number) => void;
 }
 
 export const AddonSelector: React.FC<AddonSelectorProps> = ({
   addons,
   selectedAddons,
-  onToggleAddon
+  onToggleAddon,
+  onChangeQuantity
 }) => {
   if (addons.length === 0) return null;
   
@@ -28,6 +31,8 @@ export const AddonSelector: React.FC<AddonSelectorProps> = ({
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
         {addons.map((addon) => {
           const isChecked = selectedAddons.some(a => a.id === addon.id);
+          const selectedAddon = selectedAddons.find(a => a.id === addon.id);
+          const quantity = selectedAddon?.quantity || 1;
           
           return (
             <div key={addon.id} className="flex items-center space-x-2 bg-gray-50 p-2 rounded-md">
@@ -47,6 +52,30 @@ export const AddonSelector: React.FC<AddonSelectorProps> = ({
                   R$ {addon.price.toFixed(2)}
                 </span>
               </div>
+              
+              {isChecked && onChangeQuantity && (
+                <div className="flex items-center space-x-2">
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => onChangeQuantity(addon, Math.max(1, quantity - 1))}
+                  >
+                    <Minus size={14} />
+                  </Button>
+                  
+                  <span className="w-6 text-center text-sm">{quantity}</span>
+                  
+                  <Button 
+                    variant="outline" 
+                    size="icon"
+                    className="h-6 w-6"
+                    onClick={() => onChangeQuantity(addon, quantity + 1)}
+                  >
+                    <Plus size={14} />
+                  </Button>
+                </div>
+              )}
             </div>
           );
         })}

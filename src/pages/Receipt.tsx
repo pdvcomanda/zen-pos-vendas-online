@@ -2,7 +2,6 @@
 import React, { useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useDataStore } from '@/stores/dataStore';
-import { Sale } from '@/types/app';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { ArrowLeft, Printer, Download, Share } from 'lucide-react';
@@ -56,7 +55,7 @@ const Receipt: React.FC = () => {
     
     try {
       // Try to print via middleware
-      const printed = await PrinterService.printReceipt(sale);
+      const printed = await PrinterService.enviarCupom(sale);
       
       if (printed) {
         toast.success('Enviado para impressora com sucesso!');
@@ -101,8 +100,34 @@ const Receipt: React.FC = () => {
       
       pdf.addImage(imgData, 'PNG', 0, 0, imgWidth, imgHeight);
       
-      // Save the PDF
-      pdf.save(`acaizen-cupom-${sale.id.substring(5, 13)}.pdf`);
+      // Generate file name
+      const fileName = `acaizen-cupom-${sale.id.substring(5, 13)}.pdf`;
+      
+      // Save locally
+      pdf.save(fileName);
+      
+      // Also upload to Supabase storage if available
+      try {
+        // Convert PDF to blob
+        const pdfBlob = pdf.output('blob');
+        
+        // Upload to Supabase storage
+        const { data, error } = await supabase.storage
+          .from('receipts')
+          .upload(fileName, pdfBlob, {
+            cacheControl: '3600',
+            upsert: true
+          });
+          
+        if (error) {
+          console.error('Erro ao fazer upload do PDF:', error);
+        } else {
+          console.log('PDF salvo no Supabase Storage:', data);
+        }
+      } catch (uploadError) {
+        console.error('Erro ao fazer upload do PDF:', uploadError);
+        // Continue without failing - local PDF was already generated
+      }
       
       toast.success('PDF gerado com sucesso!');
     } catch (error) {

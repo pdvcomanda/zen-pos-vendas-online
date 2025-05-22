@@ -181,5 +181,26 @@ export const PrinterService = {
     receipt += CUT_PAPER;
     
     return receipt;
+  },
+
+  /**
+   * Send receipt details to the middleware and fallback to PDF if needed
+   * @param sale Sale data
+   * @returns Promise resolving to success status
+   */
+  enviarCupom: async (sale: Sale): Promise<boolean> => {
+    try {
+      // Try to send to the middleware first
+      const printed = await PrinterService.printReceipt(sale);
+      if (printed) {
+        return true;
+      }
+      
+      // If middleware fails, we'll return false to trigger the fallback in UI
+      return false;
+    } catch (error) {
+      console.error('Erro ao enviar cupom:', error);
+      return false;
+    }
   }
 };

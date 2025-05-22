@@ -1,6 +1,6 @@
 
-import React, { ReactNode } from 'react';
-import { ProductType } from '@/types/app';
+import React, { ReactNode, useState } from 'react';
+import { ProductType, AddonType, CartAddon } from '@/types/app';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import {
@@ -11,6 +11,7 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { ShoppingCart, Plus, Minus } from 'lucide-react';
+import { AddonSelector } from './AddonSelector';
 
 interface ProductDialogProps {
   isOpen: boolean;
@@ -20,8 +21,8 @@ interface ProductDialogProps {
   setProductNotes: (notes: string) => void;
   quantity: number;
   setQuantity: (quantity: number) => void;
-  onAddToCart: () => void;
-  children?: ReactNode; // For addon selector
+  onAddToCart: (selectedAddons?: CartAddon[]) => void;
+  availableAddons: AddonType[];
 }
 
 export const ProductDialog: React.FC<ProductDialogProps> = ({
@@ -33,12 +34,47 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({
   quantity,
   setQuantity,
   onAddToCart,
-  children
+  availableAddons
 }) => {
+  const [selectedAddons, setSelectedAddons] = useState<CartAddon[]>([]);
+
+  // Toggle addon selection
+  const handleToggleAddon = (addon: AddonType) => {
+    setSelectedAddons(prev => {
+      const exists = prev.some(a => a.addon.id === addon.id);
+      if (exists) {
+        return prev.filter(a => a.addon.id !== addon.id);
+      } else {
+        return [...prev, { addon, quantity: 1 }];
+      }
+    });
+  };
+
+  // Change addon quantity
+  const handleChangeAddonQuantity = (addon: AddonType, quantity: number) => {
+    setSelectedAddons(prev => 
+      prev.map(a => a.addon.id === addon.id ? { ...a, quantity } : a)
+    );
+  };
+
+  // Reset state when dialog closes
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      setSelectedAddons([]);
+    }
+    onOpenChange(open);
+  };
+
+  // Add to cart with selected addons
+  const handleAddToCart = () => {
+    onAddToCart(selectedAddons.length > 0 ? selectedAddons : undefined);
+    setSelectedAddons([]);
+  };
+
   if (!product) return null;
 
   return (
-    <Dialog open={isOpen} onOpenChange={onOpenChange}>
+    <Dialog open={isOpen} onOpenChange={handleOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>{product.name}</DialogTitle>
@@ -79,8 +115,15 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({
             </div>
           </div>
           
-          {/* Children slot for addon selector */}
-          {children}
+          {/* Addon selector */}
+          {availableAddons.length > 0 && (
+            <AddonSelector 
+              addons={availableAddons} 
+              selectedAddons={selectedAddons.map(a => ({ ...a.addon, quantity: a.quantity }))}
+              onToggleAddon={handleToggleAddon}
+              onChangeQuantity={(addon, quantity) => handleChangeAddonQuantity(addon, quantity)}
+            />
+          )}
           
           <div>
             <label className="text-sm font-medium">Observações:</label>
@@ -97,13 +140,13 @@ export const ProductDialog: React.FC<ProductDialogProps> = ({
         <DialogFooter>
           <Button 
             variant="outline" 
-            onClick={() => onOpenChange(false)}
+            onClick={() => handleOpenChange(false)}
           >
             Cancelar
           </Button>
           <Button 
             className="bg-acai-purple hover:bg-acai-dark flex items-center"
-            onClick={onAddToCart}
+            onClick={handleAddToCart}
           >
             <ShoppingCart size={16} className="mr-2" />
             Adicionar ao carrinho
