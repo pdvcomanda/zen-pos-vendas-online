@@ -48,3 +48,11 @@ export interface Sale {
   createdAt: string;
   customerName?: string;
 }
+
+// Export types for Reports page filtering
+export interface ReportFilters {
+  startDate: string;
+  endDate: string;
+  paymentMethod: PaymentMethod | 'all';
+  productId: string | null;
+}

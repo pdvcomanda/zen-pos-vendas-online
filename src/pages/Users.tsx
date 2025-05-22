@@ -1,5 +1,5 @@
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { 
@@ -24,9 +24,10 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table";
-import { Users as UsersIcon, UserPlus, Edit, Trash2, Check, X } from 'lucide-react';
+import { Users as UsersIcon, UserPlus, Edit, Trash2, Check, X, Save } from 'lucide-react';
 import { toast } from '@/components/ui/sonner';
 import { UserRole } from '@/contexts/AuthContext';
+import { supabase } from "@/integrations/supabase/client";
 
 interface User {
   id: string;
@@ -36,27 +37,8 @@ interface User {
 }
 
 const Users: React.FC = () => {
-  // Mock user data
-  const [users, setUsers] = useState<User[]>([
-    {
-      id: '1',
-      name: 'Administrador',
-      email: 'pdvzen1@gmail.com',
-      role: 'admin'
-    },
-    {
-      id: '2',
-      name: 'João Silva',
-      email: 'joao@acaizen.com',
-      role: 'employee'
-    },
-    {
-      id: '3',
-      name: 'Maria Santos',
-      email: 'maria@acaizen.com',
-      role: 'employee'
-    }
-  ]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   
   // Form state
   const [userDialogOpen, setUserDialogOpen] = useState(false);
@@ -67,6 +49,34 @@ const Users: React.FC = () => {
     role: 'employee'
   });
   const [password, setPassword] = useState('');
+  
+  // Load users from Supabase
+  useEffect(() => {
+    const loadUsers = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('employees')
+          .select('*')
+          .order('name');
+        
+        if (error) throw error;
+        
+        setUsers(data.map(user => ({
+          id: user.id,
+          name: user.name,
+          email: user.email,
+          role: user.role as UserRole
+        })));
+      } catch (error) {
+        console.error('Error loading users:', error);
+        toast.error('Erro ao carregar usuários');
+      } finally {
+        setLoading(false);
+      }
+    };
+    
+    loadUsers();
+  }, []);
   
   // Open dialog for adding/editing user
   const openUserDialog = (user?: User) => {
@@ -91,7 +101,7 @@ const Users: React.FC = () => {
   };
   
   // Handle save user
-  const handleSaveUser = () => {
+  const handleSaveUser = async () => {
     if (!newUser.name || !newUser.email) {
       toast.error('Nome e email são obrigatórios');
       return;
@@ -105,24 +115,54 @@ const Users: React.FC = () => {
     try {
       if (editingUserId) {
         // Update existing user
+        const updateData: any = { ...newUser };
+        if (password) {
+          updateData.password = password;
+        }
+        
+        const { error } = await supabase
+          .from('employees')
+          .update(updateData)
+          .eq('id', editingUserId);
+        
+        if (error) throw error;
+        
         setUsers(users.map(user => 
           user.id === editingUserId ? { ...user, ...newUser } : user
         ));
+        
         toast.success('Usuário atualizado com sucesso');
       } else {
         // Add new user
-        setUsers([...users, { id: `user-${Date.now()}`, ...newUser }]);
+        const { data, error } = await supabase
+          .from('employees')
+          .insert([{
+            ...newUser,
+            password // Only include password for new users
+          }])
+          .select()
+          .single();
+        
+        if (error) throw error;
+        
+        setUsers([...users, { 
+          id: data.id,
+          name: data.name,
+          email: data.email,
+          role: data.role as UserRole
+        }]);
+        
         toast.success('Usuário adicionado com sucesso');
       }
       setUserDialogOpen(false);
     } catch (error) {
+      console.error('Error saving user:', error);
       toast.error('Erro ao salvar usuário');
-      console.error(error);
     }
   };
   
   // Handle delete user
-  const handleDeleteUser = (id: string) => {
+  const handleDeleteUser = async (id: string) => {
     // Don't allow deleting the primary admin
     if (id === '1') {
       toast.error('Não é possível excluir o administrador principal');
@@ -130,8 +170,20 @@ const Users: React.FC = () => {
     }
     
     if (confirm('Tem certeza que deseja excluir este usuário?')) {
-      setUsers(users.filter(user => user.id !== id));
-      toast.success('Usuário excluído com sucesso');
+      try {
+        const { error } = await supabase
+          .from('employees')
+          .delete()
+          .eq('id', id);
+        
+        if (error) throw error;
+        
+        setUsers(users.filter(user => user.id !== id));
+        toast.success('Usuário excluído com sucesso');
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        toast.error('Erro ao excluir usuário');
+      }
     }
   };
   
@@ -157,56 +209,60 @@ const Users: React.FC = () => {
           <CardTitle>Gerenciamento de Usuários</CardTitle>
         </CardHeader>
         <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Nome</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Função</TableHead>
-                <TableHead>Admin</TableHead>
-                <TableHead className="w-24">Ações</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {users.map((user) => (
-                <TableRow key={user.id}>
-                  <TableCell className="font-medium">{user.name}</TableCell>
-                  <TableCell>{user.email}</TableCell>
-                  <TableCell>
-                    {user.role === 'admin' ? 'Administrador' : 'Funcionário'}
-                  </TableCell>
-                  <TableCell>
-                    {user.role === 'admin' ? (
-                      <Check className="text-green-500" size={18} />
-                    ) : (
-                      <X className="text-red-500" size={18} />
-                    )}
-                  </TableCell>
-                  <TableCell>
-                    <div className="flex space-x-1">
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        onClick={() => openUserDialog(user)}
-                      >
-                        <Edit size={16} />
-                      </Button>
-                      
-                      <Button 
-                        variant="ghost" 
-                        size="icon"
-                        className="text-red-500 hover:text-red-700"
-                        onClick={() => handleDeleteUser(user.id)}
-                        disabled={user.id === '1'} // Disable for primary admin
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </div>
-                  </TableCell>
+          {loading ? (
+            <div className="text-center py-4">Carregando usuários...</div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Nome</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Função</TableHead>
+                  <TableHead>Admin</TableHead>
+                  <TableHead className="w-24">Ações</TableHead>
                 </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+              </TableHeader>
+              <TableBody>
+                {users.map((user) => (
+                  <TableRow key={user.id}>
+                    <TableCell className="font-medium">{user.name}</TableCell>
+                    <TableCell>{user.email}</TableCell>
+                    <TableCell>
+                      {user.role === 'admin' ? 'Administrador' : 'Funcionário'}
+                    </TableCell>
+                    <TableCell>
+                      {user.role === 'admin' ? (
+                        <Check className="text-green-500" size={18} />
+                      ) : (
+                        <X className="text-red-500" size={18} />
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex space-x-1">
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          onClick={() => openUserDialog(user)}
+                        >
+                          <Edit size={16} />
+                        </Button>
+                        
+                        <Button 
+                          variant="ghost" 
+                          size="icon"
+                          className="text-red-500 hover:text-red-700"
+                          onClick={() => handleDeleteUser(user.id)}
+                          disabled={user.id === '1'} // Disable for primary admin
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
         </CardContent>
       </Card>
       
@@ -298,9 +354,10 @@ const Users: React.FC = () => {
               Cancelar
             </Button>
             <Button 
-              className="bg-acai-purple hover:bg-acai-dark"
+              className="bg-acai-purple hover:bg-acai-dark flex items-center"
               onClick={handleSaveUser}
             >
+              <Save size={16} className="mr-2" />
               Salvar
             </Button>
           </DialogFooter>

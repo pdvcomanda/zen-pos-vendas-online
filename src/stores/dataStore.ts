@@ -1,3 +1,4 @@
+
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { supabase } from "@/integrations/supabase/client";
@@ -8,7 +9,8 @@ import {
   CartItem, 
   PaymentMethod, 
   PaymentDetails,
-  Sale 
+  Sale,
+  CartAddon
 } from "@/types/app";
 import { Json } from '@/integrations/supabase/types';
 
@@ -59,7 +61,7 @@ const convertSupabaseSale = (sale: any): Sale => {
     total: sale.total,
     payment: sale.payment as PaymentDetails,
     createdAt: sale.created_at,
-    customerName: sale.customerName
+    customerName: sale.customername
   };
 };
 
@@ -396,18 +398,18 @@ export const useDataStore = create<DataState>()(
             change
           };
           
-          // Create sale object for Supabase - convert to Json types to match database schema
+          // Create sale object for Supabase - matching database schema
           const saleData = {
             items: cart as unknown as Json,
             total,
             payment: finalPayment as unknown as Json,
-            customerName
+            customername: customerName
           };
           
           // Save to Supabase
           const { data: savedSale, error } = await supabase
             .from('sales')
-            .insert([saleData])
+            .insert(saleData)
             .select()
             .single();
             

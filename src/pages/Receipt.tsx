@@ -131,8 +131,6 @@ const generatePDF = async (sale) => {
 // Function to print receipt via middleware
 const printViaMiddleware = async (sale) => {
   try {
-    const escposContent = generateESCPOSCommands(sale);
-    
     // Send to local middleware for printing
     const response = await fetch('http://localhost:3333/print', {
       method: 'POST',
@@ -140,8 +138,16 @@ const printViaMiddleware = async (sale) => {
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({ 
-        receipt: escposContent,
-        type: 'sale'
+        type: 'receipt',
+        data: {
+          saleId: sale.id,
+          items: sale.items,
+          total: sale.total,
+          paymentMethod: sale.payment.method,
+          amountPaid: sale.payment.amount,
+          change: sale.payment.change,
+          customerName: sale.customerName
+        }
       }),
     });
     

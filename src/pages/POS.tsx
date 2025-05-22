@@ -5,6 +5,7 @@ import { ProductType, CartItem, PaymentMethod } from '@/types/app';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { toast } from '@/components/ui/sonner';
 import { useNavigate } from 'react-router-dom';
+import { Printer } from 'lucide-react';
 
 // Import our new components
 import { SearchBar } from '@/components/POS/SearchBar';
@@ -98,11 +99,35 @@ const POS: React.FC = () => {
       
       setIsCheckoutOpen(false);
       
-      // Simulate receipt printing
-      toast.success('Venda finalizada com sucesso!');
-      toast('Impressão de cupom iniciada', {
-        icon: <Printer size={16} />,
-      });
+      // Simulate receipt printing via middleware
+      try {
+        await fetch('http://localhost:3333/print', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            type: 'receipt',
+            data: {
+              saleId: sale.id,
+              items: sale.items,
+              total: sale.total,
+              paymentMethod: sale.payment.method,
+              amountPaid: sale.payment.amount,
+              change: sale.payment.change,
+              customerName: sale.customerName
+            }
+          }),
+        });
+        
+        toast.success('Venda finalizada com sucesso!');
+        toast('Impressão de cupom iniciada', {
+          icon: <Printer size={16} />,
+        });
+      } catch (printError) {
+        console.error('Error sending print command:', printError);
+        toast.error('Erro ao enviar para impressora. Verifique se o middleware está ativo.');
+      }
       
       // Navigate to receipt view
       if (sale) {
