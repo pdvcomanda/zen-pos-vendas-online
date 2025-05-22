@@ -233,4 +233,3 @@ const POS: React.FC = () => {
 };
 
 export default POS;
-Corrigido POS.tsx com tipagem e addons normalizados
